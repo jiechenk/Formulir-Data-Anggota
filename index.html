@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form Anggota – Export JSON</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f0f0f0; padding:20px; }
+    .btn { padding:8px 14px; border:none; border-radius:4px; cursor:pointer; margin:4px; }
+    .btn-info { background:#2196F3; color:#fff; }
+    .btn-warning { background:#f0ad4e; color:#fff; }
+
+	.modal {
+	  display: flex;
+	  position: fixed;
+	  z-index: 1000;
+	  left: 0;
+	  top: 0;
+	  width: 100%;
+	  height: 100%;
+	  background: rgba(0, 0, 0, 0.57);
+	  justify-content: center;
+	  align-items: center;
+	}
+		.modal-content {
+	  background: #bdbdbdb8;
+	  padding: 33px;
+	  border-radius: 21px;
+	  width: 93%;
+	  max-width: 759px;
+	  position: relative;
+	  }
+    .close { position:absolute; right:15px; top:10px; font-size:28px; cursor:pointer; }
+    .form-group { margin-bottom:15px; }
+    .form-row { display:flex; gap:15px; flex-wrap:wrap; }
+    label { display:block; margin-bottom:5px; font-weight:bold; }
+    input, textarea, select {
+      width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;
+      box-sizing:border-box;
+    }
+    textarea { resize:vertical; }
+    .photo-upload-container {
+      border:2px dashed #ccc; border-radius:8px; padding:10px;
+      text-align:center; background:#fafafa; cursor:pointer;
+    }
+    .photo-preview {
+      max-width:150px; max-height:150px; display:block; margin:10px auto;
+      object-fit:cover; border-radius:8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Modal langsung ditampilkan -->
+  <div id="memberModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeMemberModal()">&times;</span>
+      <h2 id="memberModalTitle">Data Anggota</h2>
+
+      <form id="memberForm">
+        <input type="hidden" id="memberId">
+
+        <div class="form-group">
+          <label>Foto Profil</label>
+          <div class="photo-upload-container">
+            <img id="photoPreview" class="photo-preview" alt="Preview">
+            <div id="uploadPrompt">
+              <p>📸 Klik untuk upload foto atau drag & drop</p>
+              <button type="button" class="btn btn-info" onclick="document.getElementById('memberPhoto').click()">Pilih Foto</button>
+            </div>
+            <input type="file" id="memberPhoto" accept="image/*" style="display:none;">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label>NAT (Nomor Anggota)</label>
+            <input type="text" id="memberNAT" placeholder="002/TSCA-MKS/90" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>Nama Lengkap</label>
+            <input type="text" id="memberName" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label>Tempat Lahir</label>
+            <input type="text" id="memberBirthPlace" placeholder="Contoh: Makassar">
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>Tanggal Lahir</label>
+            <input type="date" id="memberBirthDate">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label>Email</label>
+            <input type="email" id="memberEmail" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>Nomor Telepon</label>
+            <input type="tel" id="memberPhone" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Golongan Darah</label>
+          <select id="memberBlood" required>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="AB">AB</option>
+            <option value="O">O</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Alamat</label>
+          <textarea id="memberAddress" rows="2"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Angkatan</label>
+          <input type="text" id="memberJoinDate" placeholder="Contoh: Angkatan XII / 2025">
+        </div>
+
+        <!-- Tombol Export JSON menggantikan tombol Simpan -->
+        <button type="submit" class="btn btn-info">Export JSON</button>
+        <button type="button" class="btn btn-warning" onclick="closeMemberModal()">Batal</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById('memberModal');
+    const form  = document.getElementById('memberForm');
+    const photoInput = document.getElementById('memberPhoto');
+    const photoPreview = document.getElementById('photoPreview');
+
+    const memberData = []; // array data
+
+    function closeMemberModal() {
+      modal.style.display = 'none';
+      form.reset();
+      photoPreview.src = '';
+    }
+
+    photoInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) photoPreview.src = URL.createObjectURL(file);
+    });
+
+    // Submit -> simpan data & langsung export JSON
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const data = {
+        id: Date.now(),
+        nat: document.getElementById('memberNAT').value,
+        name: document.getElementById('memberName').value,
+        birthPlace: document.getElementById('memberBirthPlace').value,
+        birthDate: document.getElementById('memberBirthDate').value,
+        email: document.getElementById('memberEmail').value,
+        phone: document.getElementById('memberPhone').value,
+        blood: document.getElementById('memberBlood').value,
+        address: document.getElementById('memberAddress').value,
+        joinDate: document.getElementById('memberJoinDate').value
+      };
+      memberData.push(data);
+      exportMemberData();
+    });
+
+    function exportMemberData() {
+      const jsonStr = JSON.stringify(memberData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'anggota.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
