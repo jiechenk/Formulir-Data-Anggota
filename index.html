@@ -3,33 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Form Anggota – Export JSON</title>
+  <title>Form Anggota – Export JSON & WhatsApp</title>
   <style>
     body { font-family: Arial, sans-serif; background:#f0f0f0; padding:20px; }
     .btn { padding:8px 14px; border:none; border-radius:4px; cursor:pointer; margin:4px; }
     .btn-info { background:#2196F3; color:#fff; }
     .btn-warning { background:#f0ad4e; color:#fff; }
 
-	.modal {
-	  display: flex;
-	  position: fixed;
-	  z-index: 1000;
-	  left: 0;
-	  top: 0;
-	  width: 100%;
-	  height: 100%;
-	  background: rgba(0, 0, 0, 0.57);
-	  justify-content: center;
-	  align-items: center;
-	}
-		.modal-content {
-	  background: #bdbdbdb8;
-	  padding: 33px;
-	  border-radius: 21px;
-	  width: 93%;
-	  max-width: 759px;
-	  position: relative;
-	  }
+    .modal {
+      display: flex;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.57);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: #bdbdbdb8;
+      padding: 33px;
+      border-radius: 21px;
+      width: 93%;
+      max-width: 759px;
+      position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
     .close { position:absolute; right:15px; top:10px; font-size:28px; cursor:pointer; }
     .form-group { margin-bottom:15px; }
     .form-row { display:flex; gap:15px; flex-wrap:wrap; }
@@ -47,6 +49,7 @@
       max-width:150px; max-height:150px; display:block; margin:10px auto;
       object-fit:cover; border-radius:8px;
     }
+    small { font-size:12px; color:#666; }
   </style>
 </head>
 <body>
@@ -108,6 +111,7 @@
         <div class="form-group">
           <label>Golongan Darah</label>
           <select id="memberBlood" required>
+            <option value="">-- Pilih Golongan Darah --</option>
             <option value="A">A</option>
             <option value="B">B</option>
             <option value="AB">AB</option>
@@ -125,9 +129,18 @@
           <input type="text" id="memberJoinDate" placeholder="Contoh: Angkatan XII / 2025">
         </div>
 
-        <!-- Tombol Export JSON menggantikan tombol Simpan -->
-        <button type="submit" class="btn btn-info">Export JSON</button>
-        <button type="button" class="btn btn-warning" onclick="closeMemberModal()">Batal</button>
+        <!-- Tombol Export JSON & WhatsApp -->
+        <div class="form-group">
+          <label>Nomor WhatsApp Tujuan</label>
+          <input type="tel" id="targetWhatsApp" placeholder="Contoh: 6281234567890" value="6281234567890">
+          <small style="display:block; margin-top:5px;">Format: 62 + nomor (tanpa 0 di awal)</small>
+        </div>
+
+        <div style="margin-top:20px;">
+          <button type="submit" class="btn btn-info">💾 Export JSON</button>
+          <button type="button" class="btn btn-info" onclick="sendToWhatsApp()">📱 Kirim ke WhatsApp</button>
+          <button type="button" class="btn btn-warning" onclick="closeMemberModal()">Batal</button>
+        </div>
       </form>
     </div>
   </div>
@@ -154,6 +167,11 @@
     // Submit -> simpan data & langsung export JSON
     form.addEventListener('submit', e => {
       e.preventDefault();
+      saveMemberData();
+      exportMemberData();
+    });
+
+    function saveMemberData() {
       const data = {
         id: Date.now(),
         nat: document.getElementById('memberNAT').value,
@@ -167,8 +185,8 @@
         joinDate: document.getElementById('memberJoinDate').value
       };
       memberData.push(data);
-      exportMemberData();
-    });
+      return data;
+    }
 
     function exportMemberData() {
       const jsonStr = JSON.stringify(memberData, null, 2);
@@ -181,6 +199,49 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      
+      alert('File JSON berhasil didownload!');
+    }
+
+    function sendToWhatsApp() {
+      // Validasi form terlebih dahulu
+      if (!form.checkValidity()) {
+        alert('Mohon lengkapi semua field yang wajib diisi!');
+        form.reportValidity();
+        return;
+      }
+
+      // Simpan data jika belum
+      const data = saveMemberData();
+
+      // Ambil nomor WhatsApp tujuan
+      const waNumber = document.getElementById('targetWhatsApp').value.replace(/[^0-9]/g, '');
+      
+      if (!waNumber) {
+        alert('Mohon masukkan nomor WhatsApp tujuan!');
+        return;
+      }
+
+      // Format data menjadi teks untuk WhatsApp
+      const message = `📋 *DATA ANGGOTA BARU*\n\n` +
+        `NAT: ${data.nat}\n` +
+        `Nama: ${data.name}\n` +
+        `Tempat, Tgl Lahir: ${data.birthPlace}, ${data.birthDate}\n` +
+        `Email: ${data.email}\n` +
+        `Telepon: ${data.phone}\n` +
+        `Golongan Darah: ${data.blood}\n` +
+        `Alamat: ${data.address}\n` +
+        `Angkatan: ${data.joinDate}\n\n` +
+        `_Data JSON lengkap:_\n\`\`\`${JSON.stringify(data, null, 2)}\`\`\``;
+
+      // Encode pesan untuk URL
+      const encodedMessage = encodeURIComponent(message);
+
+      // Buka WhatsApp dengan pesan
+      const waUrl = `https://wa.me/${waNumber}?text=${encodedMessage}`;
+      window.open(waUrl, '_blank');
+
+      alert('Data berhasil dikirim ke WhatsApp! Silakan kirim pesan dari aplikasi WhatsApp yang terbuka.');
     }
   </script>
 </body>
